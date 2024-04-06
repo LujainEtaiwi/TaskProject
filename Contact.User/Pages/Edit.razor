@@ -1,0 +1,97 @@
+@page "/contacts"
+@page "/contacts/{id:int}"
+@using Models
+@inject NavigationManager NavigationManager
+<PageTitle>@title</PageTitle>
+
+<h1>Contact</h1>
+<h3>@title</h3>
+@if (contacts is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-sm-4">
+            <EditForm Model="@contacts" OnValidSubmit="HandelSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="mb-3">
+                    <label for="firstname" class="form-label">First Name :</label>
+                    <InputText id="firstname" @bind-Value=contacts.FirstName class="form-control"></InputText>
+                </div>
+                <div class="mb-3">
+                    <label for="lastname" class="form-label">last Name :</label>
+                    <InputText id="lastname" @bind-Value=contacts.LastName class="form-control"></InputText>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email :</label>
+                    <InputText id="email" @bind-Value=contacts.Email class="form-control"></InputText>
+                </div>
+                <div class="mb-3">
+                    <label for="phonenumber" class="form-label">Phone Number :</label>
+                    <InputText id="phonenumber" @bind-Value=contacts.PhoneNumber class="form-control"></InputText>
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="@Cancel">Cancel</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private ContactModel? contacts;
+    private string title = string.Empty;
+    protected override void OnParametersSet()
+    {
+        if (Id is not null)
+        {
+            ContactModel foundContact = ContactData.GetContact(Id.Value);
+            contacts = new()
+                {
+                    Id = foundContact.Id,
+                    FirstName = foundContact.FirstName,
+                    LastName = foundContact.LastName,
+                    Email = foundContact.Email,
+                    PhoneNumber = foundContact.Email
+                };
+            title = $"Edit {contacts.FirstName}";
+        }
+        else
+        {
+            contacts = new()
+                {
+                    FirstName = string.Empty,
+
+                    LastName = string.Empty,
+
+                    Email = string.Empty,
+
+                    PhoneNumber = string.Empty,
+
+                };
+            title = "Create New";
+        }
+    }
+    private void HandelSubmit()
+    {
+        if (contacts!.Id == 0)
+        {
+            ContactData.Create(contacts);
+        }
+        else
+        {
+            ContactData.Update(contacts);
+        }
+        NavigationManager.NavigateTo("/");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

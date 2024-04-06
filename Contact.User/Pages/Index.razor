@@ -1,0 +1,162 @@
+﻿@page "/"
+@using Models
+@inject NavigationManager NavigationManager
+
+<PageTitle>Contacts</PageTitle>
+
+<h1>Contacts</h1>
+<div class="row mb-4">
+    <div class="col-sm-6">
+        <button type="button" class="btn btn-primary" @onclick="CreateContact">Create New</button>
+    </div>
+    <div class="col-sm-6">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+            <button class="btn btn-primary" type="button" @onclick="Search">Search</button>
+            <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">Clear</button>
+        </div>
+    </div>
+</div>
+
+@if (contacts is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <Delete Contact="@currentContact" OnClose="@OnDeleteModalClose">
+    </Delete>
+
+    <table class="table table-success table-striped">
+        <thead>
+            <th>Id</th>
+            <th>FirstName</th>
+            <th>LastName</th>
+            <th>Email</th>
+            <th>PhoneNumber</th>
+            <th></th>
+        </thead>
+        <tbody>
+            @foreach (var contact in filteredContacts ?? Enumerable.Empty<ContactModel>())
+            {
+                <tr>
+                    <td>@contact.Id</td>
+                    <td>@contact.FirstName</td>
+                    <td>@contact.LastName</td>
+                    <td>@contact.Email</td>
+                    <td>@contact.PhoneNumber</td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="(() => EditContact(contact.Id))">
+                            <i class="oi oi-pencil"></i>
+                        </button>
+                        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                            @onclick="(() => currentContact=contact)">
+                            <i class="oi oi-x"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="row mb-6">
+        <div class="col-sm-12 ">
+            <button type="button" class="btn btn-outline-primary" @onclick="SortByFirstNameAscending">
+                <i class="oi oi-sort-ascending"></i>
+            </button>
+            <button type="button" class="btn btn-outline-primary" @onclick="SortByFirstNameDescending">
+                <i class="oi oi-sort-descending"></i>
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private ContactModel[]? contacts;
+    private ContactModel[] filteredContacts = Array.Empty<ContactModel>();
+    private ContactModel? currentContact;
+    private string searchText = "";
+    private bool sortByFirstNameAscending = true;
+
+    protected override void OnInitialized()
+    {
+        contacts = ContactData.GetContacts();
+        filteredContacts = contacts ?? Array.Empty<ContactModel>();
+    }
+
+    private void CreateContact()
+    {
+        NavigationManager.NavigateTo("/contacts");
+    }
+
+    private void EditContact(int id)
+    {
+        NavigationManager.NavigateTo($"/contacts/{id}");
+    }
+
+    private void OnDeleteModalClose(bool accepted)
+    {
+        if (accepted)
+        {
+            ContactData.Delete(currentContact?.Id ?? 0);
+            contacts = ContactData.GetContacts();
+            ApplyFilter();
+            ApplySort();
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            filteredContacts = contacts?
+            .Where(c =>
+            c.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            c.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            c.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            c.PhoneNumber.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToArray() ?? Array.Empty<ContactModel>();
+        }
+        else
+        {
+            filteredContacts = contacts ?? Array.Empty<ContactModel>();
+        }
+    }
+
+    private void ApplySort()
+    {
+        if (sortByFirstNameAscending)
+        {
+            filteredContacts = filteredContacts.OrderBy(c => c.FirstName).ToArray();
+        }
+        else
+        {
+            filteredContacts = filteredContacts.OrderByDescending(c => c.FirstName).ToArray();
+        }
+    }
+
+    private void ClearSearch()
+    {
+        searchText = "";
+        ApplyFilter();
+        ApplySort();
+    }
+
+    private void Search()
+    {
+        ApplyFilter();
+        ApplySort();
+    }
+
+    private void SortByFirstNameAscending()
+    {
+        sortByFirstNameAscending = true;
+        ApplySort();
+    }
+
+    private void SortByFirstNameDescending()
+    {
+        sortByFirstNameAscending = false;
+        ApplySort();
+    }
+}
